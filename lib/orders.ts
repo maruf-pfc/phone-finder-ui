@@ -1,33 +1,47 @@
-import type { Order } from "@/types/order"
+import type { Order } from "@/types/order";
+import { readDb, writeDb } from "./db";
 
-let orders: Order[] = []
+const orders: Order[] = [];
 
 export function getOrders(): Order[] {
-  return orders
+  const db = readDb();
+  return db.orders;
 }
 
 export function getOrderById(id: string): Order | undefined {
-  return orders.find((order) => order.id === id)
+  const db = readDb();
+  return db.orders.find((order) => order.id === id);
 }
 
 export function createOrder(order: Omit<Order, "id">): Order {
-  const newOrder = { ...order, id: `ORD-${orders.length + 1}` }
-  orders.push(newOrder)
-  return newOrder
+  const db = readDb();
+  const newOrder = { ...order, id: `ORD-${db.orders.length + 1}` };
+  db.orders.push(newOrder);
+  writeDb(db);
+  return newOrder;
 }
 
-export function updateOrder(id: string, updates: Partial<Order>): Order | undefined {
-  const index = orders.findIndex((order) => order.id === id)
+export function updateOrder(
+  id: string,
+  updates: Partial<Order>
+): Order | undefined {
+  const db = readDb();
+  const index = db.orders.findIndex((order) => order.id === id);
   if (index !== -1) {
-    orders[index] = { ...orders[index], ...updates }
-    return orders[index]
+    db.orders[index] = { ...db.orders[index], ...updates };
+    writeDb(db);
+    return db.orders[index];
   }
-  return undefined
+  return undefined;
 }
 
 export function deleteOrder(id: string): boolean {
-  const initialLength = orders.length
-  orders = orders.filter((order) => order.id !== id)
-  return orders.length < initialLength
+  const db = readDb();
+  const initialLength = db.orders.length;
+  db.orders = db.orders.filter((order) => order.id !== id);
+  if (db.orders.length < initialLength) {
+    writeDb(db);
+    return true;
+  }
+  return false;
 }
-
